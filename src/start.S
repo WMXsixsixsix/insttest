@@ -17,60 +17,29 @@ _start:
 	j main
 	nop
 
-# tlb refill exception entry
-tlb_ex_entry:
-la k0, tlb_refill_ex
-jr k0
-nop
-tlb_ex_entry_end:
-
-# usual exception entry
-usual_ex_entry:
-la k0, exception_vector_entry
-jr k0
-nop
-usual_ex_entry_end:
-
-# interrupt entry
-intr_ex_entry:
-la k0, exception_vector_entry
-jr k0
-nop
-intr_ex_entry_end:
-
-# a0: st, a1: ed
-flush_cache:
-	sltu    v0,a0,a1
-	beqz    v0,2f
-	nop
-1:	cache   0x10,0(a0)
-	cache   0x15,0(a0)
-	addiu   a0,a0,4
-	sltu    v0,a0,a1
-	bnez    v0,1b
-	nop
-2:	jr      ra
-	nop
-	nop
-
-# a1: st, a1:ed, a2:target
-setup_handler:
-	sltu    v0,a0,a1
-	beqz    v0,2f
-1:	nop
-	lw      v1,0(a0)
-	sw      v1,0(a2)
-	addiu   a0,a0,4
-	addiu   a2,a2,4
-	bltu    a0,a1, 1b
-	nop
-2:	jr      ra
-	nop
-	nop
-
 /*
  *  exception handle
  */
+.org 0x200
+    j tlb_refill_ex
+    nop
+
+.org 0x380
+    mfc0 k0, c0_cause
+    andi k0, k0, 0x7c # 6..2
+    srl  k0, k0, 0x2
+    li   k1, 1
+    beq  k0, k1, tlb_refill_ex
+    nop
+    li   k1, 2
+    beq  k0, k1, tlb_refill_ex 
+    nop
+    li   k1, 3
+    beq  k0, k1, tlb_refill_ex 
+    nop
+    j exception_vector_entry
+    nop
+
 tlb_refill_ex:
     lui v1, 0xffe8
     ori v1, 0xdc03
@@ -345,35 +314,6 @@ ex_ret:
 
 main:
 	.set noreorder
-
-#   no need to flush cache
-#   setup tlbrefill exception handler
-	la a0, tlb_ex_entry
-	la a1, tlb_ex_entry_end
-	li a2, 0xbfc00000
-	jal setup_handler
-	nop
-
-#   setup usual exception handler
-	la a0, usual_ex_entry
-	la a1, usual_ex_entry_end
-	li a2, 0xbfc00180
-	jal setup_handler
-	nop
-
-#   setup usual exception handler for loongson
-	la a0, usual_ex_entry
-	la a1, usual_ex_entry_end
-	li a2, 0xbfc00380
-	jal setup_handler
-	nop
-
-#   setup intr exception handler
-	la a0, intr_ex_entry
-	la a1, intr_ex_entry_end
-	li a2, 0xbfc00200
-	jal setup_handler
-	nop
 
     lui s0, 0          ## initial run number
 	li  s3, 0
