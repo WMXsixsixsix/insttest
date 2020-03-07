@@ -17,7 +17,7 @@ LEAF(n77_soft_int_ex_test)
 ###test inst
  ##1
     la    s4, 1f
-    TEST_SOFT_INT_EX(0xfffff2ff)
+    TEST_SOFT_INT_EX(0xff7ff2ff)
     bne s2, s7, inst_error
     nop
  ##2
